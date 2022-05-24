@@ -113,8 +113,10 @@ jenkins:
     {{- tpl .Values.controller.JCasC.securityRealm . | nindent 4 }}
   {{- end }}
   disableRememberMe: {{ .Values.controller.disableRememberMe }}
+  {{- if .Values.controller.legacyRemotingSecurityEnabled }}
   remotingSecurity:
     enabled: true
+  {{- end }}
   mode: {{ .Values.controller.executorMode }}
   numExecutors: {{ .Values.controller.numExecutors }}
   {{- if not (kindIs "invalid" .Values.controller.customJenkinsLabels) }}
@@ -161,7 +163,9 @@ jenkins:
         value: {{ $val | quote }}
       {{- end }}
       templates:
+    {{- if not .Values.agent.disableDefaultAgent }}
       {{- include "jenkins.casc.podTemplate" . | nindent 8 }}
+    {{- end }}
     {{- if .Values.additionalAgents }}
       {{- /* save .Values.agent */}}
       {{- $agent := .Values.agent }}
@@ -209,6 +213,7 @@ Returns kubernetes pod template configuration as code
 */}}
 {{- define "jenkins.casc.podTemplate" -}}
 - name: "{{ .Values.agent.podName }}"
+  namespace: "{{ template "jenkins.agent.namespace" . }}"
 {{- if .Values.agent.annotations }}
   annotations:
   {{- range $key, $value := .Values.agent.annotations }}
@@ -367,5 +372,16 @@ Create a full tag name for controller image
     {{- default (printf "%s-%s" .Chart.AppVersion .Values.controller.tagLabel) .Values.controller.tag -}}
 {{- else -}}
     {{- default .Chart.AppVersion .Values.controller.tag -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create the HTTP port for interacting with the controller
+*/}}
+{{- define "controller.httpPort" -}}
+{{- if .Values.controller.httpsKeyStore.enable -}}
+    {{- .Values.controller.httpsKeyStore.httpPort -}}
+{{- else -}}
+    {{- .Values.controller.targetPort -}}
 {{- end -}}
 {{- end -}}

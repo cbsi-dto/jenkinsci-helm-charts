@@ -12,10 +12,144 @@ Use the following links to reference issues, PRs, and commits prior to v2.6.0.
 The change log until v1.5.7 was auto-generated based on git commits.
 Those entries include a reference to the git commit to be able to get more details.
 
+## 4.1.1
+Added 'controller.prometheus.metricRelabelings' to allow relabling and dropping unused prometheus metrics
+
+## 4.1.0
+
+Added `controller.sidecars.configAutoReload.envFrom`, `controller.initContainerEnvFrom`, `controller.containerEnvFrom`
+
+## 4.0.1
+
+No code changes - CI updated to run unit tests using Helm 3.8.2.
+
+## 4.0.0
+
+Removes automatic `remotingSecurity` setting when using a container tag older than `2.326` (introduced in [`3.11.7`](#3117)). If you're using a version older than `2.326`, you should explicitly set `.controller.legacyRemotingSecurityEnabled` to `true`.
+
+## 3.12.2
+
+Update Jenkins image and appVersion to jenkins lts release version 2.332.3
+
+## 3.12.1
+
+Make namespace configurable for agents and additional agents.
+
+## 3.12.0
+
+Added a flag for disabling the default Jenkins Agent configuration.
+
+## 3.11.10
+
+Update Jenkins image and appVersion to jenkins lts release version 2.332.2
+
+
+## 3.11.9 Bump configuration-as-code plugin version
+
+| plugin                | old version | new version |
+| --------------------- | ----------- | ----------- |
+| configuration-as-code | 1.51        | 1414.v878271fc496f        |
+
+## 3.11.8
+
+Make [externalTrafficPolicy](https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies) and `loadBalancerSourceRanges` fields customizable for Agent listener service via `controller.agentListenerExternalTrafficPolicy` and `controller.loadBalancerSourceRanges`.
+
+## 3.11.7
+
+Removed Configuration as Code `remotingSecurity` section for Jenkins 2.326 or newer. See [Documentation](https://www.jenkins.io/redirect/AdminWhitelistRule) to learn more.
+
+## 3.11.6
+
+Update Jenkins image and appVersion to jenkins lts release version 2.332.1
+
+
+## 3.11.5
+
+Change Backup Role name function call to match the RoleDef function call in the Backup RoleBinding
+
+## 3.11.4
+
+Update Jenkins image and appVersion to jenkins lts release version 2.319.3
+
+
+## 3.11.3
+
+Update kiwigrid/k8s-sidecar:1.15.0
+Update jenkins/inbound-agent:4.11.2-4
+
+## 3.11.2
+
+Improve example for workspaceVolume. Clarify that this is not a list.
+
+## 3.11.1
+
+Update configuration-as-code plugin to 1.55.1
+
+
+## 3.11.0
+
+Update default plugin versions
+
+| plugin                | old version | new version |
+| --------------------- | ----------- | ----------- |
+| kubernetes            | 1.31.1      | 1.31.3      |
+| git                   | 4.10.1      | 4.10.2      |
+
+## 3.10.3
+
+Update Jenkins image and appVersion to jenkins lts release version 2.319.2
+
+
+## 3.10.2
+
+Fix definition of startupProbe when deploying on a Kubernetes cluster < 1.16
+
+## 3.10.1
+
+correct VALUES_SUMMARY.md for installLatestPlugins
+
+## 3.10.0
+
+Update default plugin versions
+
+| plugin                | old version | new version |
+| --------------------- | ----------- | ----------- |
+| kubernetes            | 1.30.11     | 1.31.1      |
+| git                   | 4.10.0      | 4.10.1      |
+| configuration-as-code | 1.54        | 1.55        |
+
+## 3.9.4
+
+Add JAVA_OPTIONS to the README so proxy settings get picked by jenkins-plugin-cli
+
+## 3.9.3
+
+Fix config reload request url when httpsKeystore in use
+
+## 3.9.2
+
+Update Jenkins image and appVersion to jenkins lts release version 2.319.1
+Update following plugins:
+
+* kubernetes:1.30.11
+* git:4.10.0
+* configuration-as-code:1.54
+
+## 3.9.1
+
+Adding `tpl` to `controller.overrideArgs`
+
+## 3.9.0
+
+Added containerSecurityContext
+
+## 3.8.9
+
+Fix mounting of https keystore secret when httpsKeyStore is enabled
+
 ## 3.8.8
 
 Update Jenkins image and appVersion to jenkins lts release version 2.303.3
-
 
 ## 3.8.7
 

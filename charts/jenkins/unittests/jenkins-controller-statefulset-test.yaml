@@ -46,7 +46,7 @@ tests:
             template:
               metadata:
                 annotations:
-                  checksum/config: cfc49ddca1f6d926d717ee6b879fdf99b206ba760c1dcb4fcd439e0f7c138d7a
+                  checksum/config: 4307f5d0293691c50331e5b189373de146bc034010a4fe693bdc010804931156
                 labels:
                   app.kubernetes.io/component: jenkins-controller
                   app.kubernetes.io/instance: my-release
@@ -69,8 +69,13 @@ tests:
                     value: "50000"
                   - name: CASC_JENKINS_CONFIG
                     value: /var/jenkins_home/casc_configs
-                  image: jenkins/jenkins:2.303.3-jdk11
+                  image: jenkins/jenkins:2.332.3-jdk11
                   imagePullPolicy: Always
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    readOnlyRootFilesystem: true
+                    allowPrivilegeEscalation: false
                   livenessProbe:
                     failureThreshold: 5
                     httpGet:
@@ -127,6 +132,8 @@ tests:
                     subPath: jenkins-admin-password
                   - mountPath: /var/jenkins_cache
                     name: jenkins-cache
+                  - mountPath: /tmp
+                    name: tmp-volume
                 - env:
                   - name: POD_NAME
                     valueFrom:
@@ -144,8 +151,11 @@ tests:
                     value: POST
                   - name: REQ_RETRY_CONNECT
                     value: "10"
-                  image: kiwigrid/k8s-sidecar:1.14.2
+                  image: kiwigrid/k8s-sidecar:1.15.0
                   imagePullPolicy: IfNotPresent
+                  securityContext:
+                    readOnlyRootFilesystem: true
+                    allowPrivilegeEscalation: false
                   name: config-reload
                   resources: {}
                   volumeMounts:
@@ -157,8 +167,13 @@ tests:
                 - command:
                   - sh
                   - /var/jenkins_config/apply_config.sh
-                  image: jenkins/jenkins:2.303.3-jdk11
+                  image: jenkins/jenkins:2.332.3-jdk11
                   imagePullPolicy: Always
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    readOnlyRootFilesystem: true
+                    allowPrivilegeEscalation: false
                   name: init
                   resources:
                     limits:
@@ -176,6 +191,8 @@ tests:
                     name: plugins
                   - mountPath: /var/jenkins_plugins
                     name: plugin-dir
+                  - mountPath: /tmp
+                    name: tmp-volume
                 securityContext:
                   fsGroup: 1000
                   runAsUser: 1000
@@ -196,6 +213,8 @@ tests:
                     claimName: my-release-jenkins
                 - emptyDir: {}
                   name: sc-config-volume
+                - emptyDir: {}
+                  name: tmp-volume
                 - name: admin-secret
                   secret:
                     secretName: my-release-jenkins
@@ -330,15 +349,15 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: jenkins/jenkins:2.303.3-alpine
+          value: jenkins/jenkins:2.332.3-alpine
   - it: configure empty image tag label
     template: jenkins-controller-statefulset.yaml
     set:
-      controller.tagLabel: 
+      controller.tagLabel:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: jenkins/jenkins:2.303.3
+          value: jenkins/jenkins:2.332.3
   - it: custom image
     template: jenkins-controller-statefulset.yaml
     set:
@@ -462,6 +481,15 @@ tests:
         value: "test-env-var-container"
       - name: "TEST_ENV_VAR__CONTAINER_TEMPLATED"
         value: '{{ .Values.testValue }}'
+      controller.initContainerEnvFrom:
+      - configMapRef:
+          name: special-config
+      controller.sidecars.configAutoReload.envFrom:
+      - configMapRef:
+          name: special-config
+      controller.containerEnvFrom:
+      - configMapRef:
+          name: special-config
     asserts:
       - contains:
           path: spec.template.spec.initContainers[0].env
@@ -493,11 +521,38 @@ tests:
           content:
             name: "TEST_ENV_VAR__CONTAINER_TEMPLATED"
             value: 'some-value'
+      - contains:
+          path: spec.template.spec.initContainers[0].envFrom
+          content:
+            configMapRef:
+              name: special-config
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            configMapRef:
+              name: special-config
+      - contains:
+          path: spec.template.spec.containers[1].envFrom
+          content:
+            configMapRef:
+              name: special-config
   - it: overrides container args
     template: jenkins-controller-statefulset.yaml
     set:
       controller.overrideArgs:
         - --httpPort=8080
+        - --requestHeaderSize=32768
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value:
+            - --httpPort=8080
+            - --requestHeaderSize=32768
+  - it: allows templating in container args overrides
+    template: jenkins-controller-statefulset.yaml
+    set:
+      controller.overrideArgs:
+        - --httpPort={{.Values.controller.targetPort}}
         - --requestHeaderSize=32768
     asserts:
       - equal:

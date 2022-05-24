@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: next release version
         id: nextversion
@@ -37,7 +37,7 @@ jobs:
           fi
 
       - name: Update version in Chart.yaml
-        uses: mikefarah/yq@v4.14.2
+        uses: mikefarah/yq@v4.25.1
         if: ${{ steps.update.outputs.available == 'true' }}
         with:
           cmd: yq eval '.version = "${{ steps.nextversion.outputs.version }}"' -i charts/jenkins/Chart.yaml
@@ -66,7 +66,7 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         if: ${{ steps.update.outputs.available == 'true' }}
         with:
           token: ${{ steps.generate-token.outputs.token }}
