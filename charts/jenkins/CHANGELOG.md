@@ -12,6 +12,45 @@ Use the following links to reference issues, PRs, and commits prior to v2.6.0.
 The change log until v1.5.7 was auto-generated based on git commits.
 Those entries include a reference to the git commit to be able to get more details.
 
+## 4.1.12
+
+If keystore is defined, it is now also made available in the initContainer.
+
+## 4.1.11
+
+JCasC ConfigMaps now generate their name from the `jenkins.casc.configName` helper
+
+## 4.1.10
+
+Update Jenkins image and appVersion to jenkins lts release version 2.346.1
+
+
+## 4.1.9
+
+Allow setting `imagePullSecret` for backup job via `backup.imagePullSecretName`
+
+## 4.1.8
+
+Fix path of projected secrets from `additionalExistingSecrets`.
+
+## 4.1.7
+
+Update README with explanation on the required environmental variable `AWS_REGION` in case of using an S3 bucket.
+
+## 4.1.6
+
+project adminSecret, additionalSecrets and additionalExistingSecrets instead of mount with subPath
+
+## 4.1.5
+
+Update README to fix `JAVA_OPTS` name.
+
+## 4.1.4
+Update plugins
+
+## 4.1.3
+Update jenkins-controller-statefulset projected volumes definition
+
 ## 4.1.1
 Added 'controller.prometheus.metricRelabelings' to allow relabling and dropping unused prometheus metrics
 
@@ -42,7 +81,6 @@ Added a flag for disabling the default Jenkins Agent configuration.
 ## 3.11.10
 
 Update Jenkins image and appVersion to jenkins lts release version 2.332.2
-
 
 ## 3.11.9 Bump configuration-as-code plugin version
 

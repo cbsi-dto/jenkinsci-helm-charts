@@ -152,6 +152,11 @@ spec:
             - mountPath: {{ .Values.controller.jenkinsHome }}/init.groovy.d
               name: init-scripts
             {{- end }}
+            {{- if .Values.controller.httpsKeyStore.enable }}
+            {{- $httpsJKSDirPath :=  printf "%s" .Values.controller.httpsKeyStore.path }}
+            - mountPath: {{ $httpsJKSDirPath }}
+              name: jenkins-https-keystore
+            {{- end }}
       containers:
         - name: jenkins
           image: "{{ .Values.controller.image }}:{{- include "controller.tag" . -}}"
@@ -186,6 +191,10 @@ spec:
 {{ (tpl ( toYaml .Values.controller.containerEnvFrom) .) | indent 12 }}
             {{- end }}
           env:
+            {{- if or .Values.controller.additionalSecrets .Values.controller.additionalExistingSecrets .Values.controller.adminSecret }}
+            - name: SECRETS
+              value: /run/secrets/additional
+            {{- end }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -274,26 +283,9 @@ spec:
             - name: sc-config-volume
               mountPath: {{ .Values.controller.sidecars.configAutoReload.folder | default (printf "%s/casc_configs" (.Values.controller.jenkinsRef)) }}
             {{- end }}
-            {{- if .Values.controller.adminSecret }}
-            - name: admin-secret
-              mountPath: /run/secrets/chart-admin-username
-              subPath: {{ .Values.controller.admin.userKey | default "jenkins-admin-user" }}
-              readOnly: true
-            - name: admin-secret
-              mountPath: /run/secrets/chart-admin-password
-              subPath: {{ .Values.controller.admin.passwordKey | default "jenkins-admin-password" }}
-              readOnly: true
-            {{- end }}
-            {{- range .Values.controller.additionalSecrets }}
-            - name: jenkins-additional-secrets
-              mountPath: /run/secrets/{{ .name }}
-              subPath: {{ .name }}
-              readOnly: true
-            {{- end }}
-            {{- range $key, $value := .Values.controller.additionalExistingSecrets }}
-            - name: {{ $value.name }}-{{ $value.keyName }}
-              mountPath: /run/secrets/{{ $value.name }}-{{ $value.keyName }}
-              subPath: {{ $value.keyName }}
+            {{- if or .Values.controller.additionalSecrets .Values.controller.additionalExistingSecrets .Values.controller.adminSecret }}
+            - name: jenkins-secrets
+              mountPath: /run/secrets/additional
               readOnly: true
             {{- end }}
             - name: jenkins-cache
@@ -358,6 +350,7 @@ spec:
       {{- if and .Values.controller.initScripts .Values.controller.initConfigMap }}
       - name: init-scripts
         projected:
+          sources:
           - configMap:
               name: {{ template "jenkins.fullname" . }}-init-scripts
           - configMap:
@@ -378,17 +371,32 @@ spec:
       - name: plugin-dir
         emptyDir: {}
       {{- end }}
-      {{- if .Values.controller.additionalSecrets }}
-      - name: jenkins-additional-secrets
-        secret:
-          secretName: {{ template "jenkins.fullname" . }}-additional-secrets
-      {{- end }}
-      {{- if .Values.controller.additionalExistingSecrets }}
-      {{- range $key, $value := .Values.controller.additionalExistingSecrets }}
-      - name: {{ $value.name }}-{{ $value.keyName }}
-        secret:
-          secretName: {{ $value.name }}
-      {{- end }}
+      {{- if or .Values.controller.additionalSecrets .Values.controller.additionalExistingSecrets .Values.controller.adminSecret }}
+      - name: jenkins-secrets
+        projected:
+          sources:
+          {{- if .Values.controller.additionalSecrets }}
+          - secret:
+              name: {{ template "jenkins.fullname" . }}-additional-secrets
+          {{- end }}
+          {{- if .Values.controller.additionalExistingSecrets }}
+          {{- range $key, $value := .Values.controller.additionalExistingSecrets }}
+          - secret:
+              name: {{ $value.name }}
+              items:
+                - key: {{ $value.keyName }}
+                  path: {{ $value.name }}-{{ $value.keyName }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.controller.adminSecret }}
+          - secret:
+              name: {{ .Values.controller.admin.existingSecret | default (include "jenkins.fullname" .) }}
+              items:
+                - key: {{ .Values.controller.admin.userKey | default "jenkins-admin-user" }}
+                  path: chart-admin-username
+                - key: {{ .Values.controller.admin.passwordKey | default "jenkins-admin-password" }}
+                  path: chart-admin-password
+        {{- end }}
       {{- end }}
       - name: jenkins-cache
         emptyDir: {}
@@ -405,7 +413,6 @@ spec:
         emptyDir: {}
       - name: tmp-volume
         emptyDir: {}
-
       {{- if .Values.controller.httpsKeyStore.enable }}
       - name: jenkins-https-keystore
         secret:
@@ -413,11 +420,6 @@ spec:
           items:
           - key: jenkins-jks-file
             path: {{ .Values.controller.httpsKeyStore.fileName }}
-      {{- end }}
-      {{- if .Values.controller.adminSecret }}
-      - name: admin-secret
-        secret:
-          secretName: {{ .Values.controller.admin.existingSecret | default (include "jenkins.fullname" .) }}
       {{- end }}
 
 {{- if .Values.controller.imagePullSecretName }}
